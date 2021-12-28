@@ -32,45 +32,45 @@ data = data.sortby("lat").sortby("lon")      # Order by coordinates
 data = data.resample({"time": "h"}).bfill()  # Fix time coordinate
 
 
-
 lat, lon = data.lat.values, data.lon.values
 LON, LAT = np.meshgrid(lon, lat)
-#%%
-var = data.isel(lev=-1).groupby("time.hour").max().compute()
-var1 = (var.D3_ppb_NO+var.D3_ppb_NO2).mean(dim='hour')
-var2 = (var.D3_ppb_O3).mean(dim='hour')
+# %%
+var = data.isel(lev=-1).groupby("time.hour").max()
+var1 = (var.D3_ppb_NO+var.D3_ppb_NO2).quantile(0.5, dim='hour')
+var2 = (var.D3_ppb_O3).quantile(0.5, dim='hour')
 
 
 # %%
 
 fig, ax = plt.subplots(1, 2, figsize=(
     10, 3), subplot_kw={'projection': ccrs.Mercator()})
-plt.rc('font',size=15)
+plt.rc('font', size=15)
 for axis in ax:
     axis.coastlines()
-    axis.set_extent([LON.min(),LON.max(),LAT.min(),LAT.max()])
-    gl=axis.gridlines(draw_labels=True, linestyle=":")
-    gl.xlocator = mticker.FixedLocator([-71.7,-71.1,-70.5,-70.0])
+    axis.set_extent([LON.min(), LON.max(), LAT.min(), LAT.max()])
+    axis.add_feature(cartopy.feature.BORDERS)
+    gl = axis.gridlines(draw_labels=True, linestyle=":")
+    gl.xlocator = mticker.FixedLocator([-71.7, -71.1, -70.5, -70.0])
     gl.right_labels = False
     gl.top_labels = False
-gl.left_labels=False    
+gl.left_labels = False
 
 
-m1 = ax[0].pcolormesh(LON,LAT,var1.values.squeeze(), rasterized=True, shading='auto',
+m1 = ax[0].pcolormesh(LON, LAT, var1.values.squeeze(), rasterized=True, shading='auto',
                       cmap='Blues', norm=colors.LogNorm(1, 100),
                       transform=ccrs.PlateCarree())
-ax[0].set_title('(a)',loc='left',fontsize=18)
+ax[0].set_title('(a)', loc='left', fontsize=18)
 
 
 m2 = ax[1].pcolormesh(LON, LAT, var2.values.squeeze(), rasterized=True,
                       shading='auto', transform=ccrs.PlateCarree(),
                       cmap='Purples', norm=colors.Normalize(0, 100))
 
-ax[1].set_title('(b)',loc='left',fontsize=18)
-fig.colorbar(m1,ax=ax[0], label="Máxima razón de\nmezcla de NOx (ppb)")
-fig.colorbar(m2,ax=ax[1], label="Máxima razón de\nmezcla de O3 (ppb)")
+ax[1].set_title('(b)', loc='left', fontsize=18)
+fig.colorbar(m1, ax=ax[0], label="Máxima razón de\nmezcla de NOx (ppb)")
+fig.colorbar(m2, ax=ax[1], label="Máxima razón de\nmezcla de O3 (ppb)")
 
-plt.savefig('plots/maximums.pdf',dpi=150,bbox_inches='tight')
+plt.savefig('plots/maximums.pdf', dpi=150, bbox_inches='tight')
 # %%
 # Compute heights from pressure using standard atmosphere
 heights = pressure_to_height_std(data.p.values*units("hPa")).magnitude*1e3
@@ -323,7 +323,7 @@ plt.savefig("plots/PBL_dailycycle.pdf", dpi=150, bbox_inches="tight")
 
 # %%
 fig, ax = plt.subplots(1, 2, figsize=(10, 4))
-plt.rc('font',size=15)
+plt.rc('font', size=15)
 fig.tight_layout(pad=3)
 ax = list(ax.ravel())
 ts = PBL_techodgf.copy()
@@ -349,7 +349,8 @@ ax[1].set_ylim(2e2, 1.3e3)
 
 
 text = 'Pearson $r$: '+'{:.2f}'.format(np.corrcoef(ts, ts2)[0, 1])+'\n'
-text = text + 'Sesgo: ' + '{:.2f}'.format(sum(ts-ts2)/np.max((sum(ts), sum(ts2))))+'\n'
+text = text + 'Sesgo: ' + \
+    '{:.2f}'.format(sum(ts-ts2)/np.max((sum(ts), sum(ts2))))+'\n'
 text = text + '$\sigma_{EMEP}: $'+'{:.2f}'.format(np.std(ts))+'\n'
 text = text + '$\sigma_{DGF}: $'+'{:.2f}'.format(np.std(ts2))+'\n'
 
